@@ -53,7 +53,7 @@
   },
   "scripts": {
     "check": "node --check lib/index.js && node --check lib/client.js && node --check overlay/main.js && node --check overlay/preload.js",
-    "test": "node test-host.mjs && node test-roam.mjs && node test-notifications.mjs",
+    "test": "node test-host.mjs && node test-roam.mjs && node test-notifications.mjs && node test-hit-area.mjs",
     "sync": "./sync.sh"
   },
   "peerDependencies": {

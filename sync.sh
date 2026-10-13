@@ -14,4 +14,4 @@ case "$SRC" in
 esac
 rsync -a --delete --exclude ".DS_Store" "$SRC/" "$DST/"
 echo "synced: $SRC -> $DST"
-cd "$DST" && node test-host.mjs >/dev/null && node test-roam.mjs >/dev/null && node test-notifications.mjs >/dev/null && echo "tests: pass" || { echo "tests: FAILED (synced anyway)"; exit 1; }
+cd "$DST" && node test-host.mjs >/dev/null && node test-roam.mjs >/dev/null && node test-notifications.mjs >/dev/null && node test-hit-area.mjs >/dev/null && echo "tests: pass" || { echo "tests: FAILED (synced anyway)"; exit 1; }

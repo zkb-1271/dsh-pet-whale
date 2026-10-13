@@ -61,9 +61,16 @@ let dragMoving = false;
 let pos = { x: innerWidth - 136, y: 24 };
 let action = null, actionUntil = 0, frameIdx = 0, lastFrame = 0, lastAnim = null;
 let look = null, squashUntil = 0, dragging = null;
+// What tick() actually drew last frame: sprite cell, fx offset and squash.
+// The hit test maps screen points through these so hovering/clicking lines up
+// with the whale on screen even mid-shake, mid-bounce or mid-squash.
+let drawnCell = { row: 0, col: 0 }, drawnFx = { fxX: 0, fxY: 0 }, drawnSquash = 1;
 const hearts = [];
 const roam = { x: null, y: null, tx: null, ty: null, heading: null };
 const sprite = new Image();
+// CORS-approved so the hit mask below can read the sprite's pixels.
+// The host /sprite route answers with access-control-allow-origin: *.
+sprite.crossOrigin = "anonymous";
 let spriteReady = false, spritePetId = "";
 const drops = [];
 let pileCols = new Float32Array(1);
@@ -372,6 +379,9 @@ function tick(time) {
       if (fxKind === "shake") fxX = Math.sin(time / 28) * size * 0.06;
       else fxY = -Math.abs(Math.sin(time / 170)) * ph * 0.2;
     }
+    drawnCell = { row, col };
+    drawnFx = { fxX, fxY };
+    drawnSquash = squash;
     ctx.save();
     ctx.translate(pos.x + size / 2 + fxX, pos.y + ph + fxY);
     ctx.scale(squash, 2 - squash);
@@ -389,23 +399,90 @@ function tick(time) {
   const act = state.activity;
   if (act && act.pose && act.pose !== "idle" && act.pose !== "review" && act.text) {
     bubble.style.display = "block";
-    bubble.style.top = `${pos.y + ph + 16}px`;
-    bubble.style.left = `${Math.min(innerWidth - 260, Math.max(8, pos.x + size - 220))}px`;
     if (bubble.dataset.key !== `${act.id}:${act.text}`) {
       bubble.dataset.key = `${act.id}:${act.text}`;
       bubble.querySelector("strong").textContent = act.title || "";
       bubble.querySelector("span").textContent = act.text;
+      bubble.dataset.w = "";
     }
+    if (!bubble.dataset.w) bubble.dataset.w = String(bubble.offsetWidth);
+    const bw = Number(bubble.dataset.w) || 220;
+    const bh = bubble.offsetHeight || 60;
+    const left = Math.max(8, Math.min(innerWidth - bw - 8, pos.x + size / 2 - bw / 2));
+    let top = pos.y + ph + 16;
+    if (top + bh > innerHeight - 8) top = Math.max(8, pos.y - 16 - bh);
+    bubble.style.top = `${top}px`;
+    bubble.style.left = `${left}px`;
   } else bubble.style.display = "none";
 }
 requestAnimationFrame(tick);
 
 // ---- input ----
 let clickThrough = true;
+// Pixel-perfect hit testing.
+//
+// The old test was the whole pet rect plus a 10px ring (220px while the menu
+// was open). The whale only fills ~80% of its 192x208 frame, so a large
+// transparent margin around it swallowed clicks meant for the apps below and
+// made "click next to the whale" impossible. Now only the whale's own opaque
+// pixels react: the currently drawn animation cell is copied into an offscreen
+// canvas once and its alpha channel becomes the hit mask.
+const HIT_W = 192, HIT_H = 208, HIT_ALPHA = 24;
+const hitCanvas = document.createElement("canvas");
+hitCanvas.width = HIT_W;
+hitCanvas.height = HIT_H;
+const hitCtx = hitCanvas.getContext("2d", { willReadFrequently: true });
+let maskRow = -1, maskCol = -1, maskData = null, maskBroken = false;
+
+function frameMask(row, col) {
+  if (!spriteReady || maskBroken) return null;
+  if (maskRow !== row || maskCol !== col || !maskData) {
+    try {
+      hitCtx.clearRect(0, 0, HIT_W, HIT_H);
+      hitCtx.drawImage(sprite, col * HIT_W, row * HIT_H, HIT_W, HIT_H, 0, 0, HIT_W, HIT_H);
+      maskData = hitCtx.getImageData(0, 0, HIT_W, HIT_H);
+      maskRow = row;
+      maskCol = col;
+    } catch {
+      // Canvas tainted (sprite served without CORS approval): degrade to the
+      // plain body rect instead of breaking interaction.
+      maskBroken = true;
+      maskData = null;
+      return null;
+    }
+  }
+  return maskData;
+}
+// Inverse of the draw transform in tick(): screen point -> sprite pixel.
+function screenToSprite(x, y) {
+  const size = state.config.size, ph = petH();
+  const ox = pos.x + size / 2 + drawnFx.fxX, oy = pos.y + ph + drawnFx.fxY;
+  return {
+    x: Math.floor(((x - ox) / drawnSquash + size / 2) / size * HIT_W),
+    y: Math.floor(((y - oy) / (2 - drawnSquash) + ph) / ph * HIT_H)
+  };
+}
 function overPet(e) {
-  const r = petRect();
-  const pad = menuOpen ? 220 : 10;
-  return e.clientX >= r.l - pad && e.clientX <= r.r + pad && e.clientY >= r.t - (menuOpen ? 160 : 10) && e.clientY <= r.b + 10;
+  if (state.config.visible === false) return false;
+  const mask = frameMask(drawnCell.row, drawnCell.col);
+  if (!mask) {
+    // Sprite not decoded yet (or unreadable): plain body rect, no padding ring.
+    const r = petRect();
+    return e.clientX >= r.l && e.clientX <= r.r && e.clientY >= r.t && e.clientY <= r.b;
+  }
+  const p = screenToSprite(e.clientX, e.clientY);
+  // 3x3 sprite-pixel neighbourhood: forgives nearest-neighbour edge snapping
+  // without growing the hit area beyond the silhouette.
+  for (let dy = -1; dy <= 1; dy++) {
+    const y = p.y + dy;
+    if (y < 0 || y >= HIT_H) continue;
+    for (let dx = -1; dx <= 1; dx++) {
+      const x = p.x + dx;
+      if (x < 0 || x >= HIT_W) continue;
+      if (mask.data[(y * HIT_W + x) * 4 + 3] > HIT_ALPHA) return true;
+    }
+  }
+  return false;
 }
 window.addEventListener("mousemove", (e) => {
   const over = overPet(e) || menuOpen;
@@ -466,7 +543,9 @@ function finishDrag() {
   if (taps.length >= 7) { taps = []; startPatrol(); }
   doPat();
 }
-window.addEventListener("mouseup", () => {
+window.addEventListener("mouseup", (e) => {
+  // Pressed on the whale but released on empty space next to it: not a tap.
+  if (dragging && !dragging.moved && !overPet(e)) { dragging = null; return; }
   finishDrag();
 });
 window.addEventListener("dblclick", (e) => {

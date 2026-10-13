@@ -1,5 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+- **Fixed (desktop overlay): click detection is now pixel-perfect.** Only the
+  whale's own opaque pixels react to hover, click and drag. Previously the
+  whole pet rect plus a 10px ring (220px while the menu was open) was live, so
+  the large transparent margin around the whale mis-triggered pats/sprays and
+  swallowed clicks meant for the apps below — clicking next to the whale was
+  nearly impossible. The hit mask is the current animation frame's alpha
+  channel, re-mapped through the live draw transform every frame (position,
+  shake/bounce offset, pat squash), with a plain body-rect fallback before the
+  sprite decodes.
+- **Fixed (desktop overlay):** pressing the whale and releasing on the empty
+  space beside it no longer counts as a pat.
+- **Fixed (desktop overlay):** a hidden pet no longer reacts to hover/click.
+- **Changed (desktop overlay):** the task bubble is now centered below the
+  whale and flips above it when it would overflow the screen bottom.
+- **Engineering:** new `test-hit-area.mjs` (43 assertions) slices the real
+  `<script>` out of `overlay/renderer.html` and drives `overPet()` with a
+  stubbed DOM plus synthetic masks — including a real frame lifted from the
+  shipped spritesheet — locking in "only the whale body is clickable". Also
+  serves as the renderer's syntax check.
+
 ## [1.2.1] - 2026-10-06
 
 - **Fixed:** the task-status bubble now always renders **below** the whale —
