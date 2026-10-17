@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+- **Architecture fix: the DSH version-exemption treadmill is over.** The
+  root cause was one dead declaration inherited from the upstream fork: a
+  `peerDependencies` range on `@deepseek-ai/dsh-host-webserver` pinned to
+  0.1.x prereleases (code the plugin never imports). DSH's startup check
+  compares the runtime version (e.g. 0.2.1-rc.1) against every
+  `@deepseek-ai/dsh-*` peer range, so it always failed — hence a manual
+  exact-version exemption after every DSH upgrade (the wall of
+  `0.2.0-rc.2` entries in compatibility.json). The manifest now declares
+  `engines.dsh: ">=0.1.0 <1.0.0-0"`, the official single-knob compatibility
+  gate: once declared, peer ranges are ignored entirely. The dead peer
+  dependency is gone too. Every 0.x DSH (all rc/alpha included) now passes
+  automatically — **no more exemptions** — while 1.0.0 deliberately asks
+  for a conscious re-vet (widen the range when that day comes).
 - **Fixed (desktop overlay): click detection is now pixel-perfect.** Only the
   whale's own opaque pixels react to hover, click and drag. Previously the
   whole pet rect plus a 10px ring (220px while the menu was open) was live, so

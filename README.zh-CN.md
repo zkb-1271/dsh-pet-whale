@@ -61,10 +61,9 @@
    }
    ```
 3. 在 profile 目录执行 `pnpm install --offline`，重启 DSH；
-4. ⚠️ **若被 DSH 版本校验静默拦截**（装了没反应），需按 manifest 授一次豁免：
-   ```bash
-   dsh plugin --profile desktop allow-version dsh-pet-whale@1.2.0 --dsh-version <你的DSH版本> --accept-risk
-   ```
+4. ✅ **无需版本豁免**：manifest 已按 DSH 规范声明 `engines.dsh` 兼容区间
+   （`>=0.1.0 <1.0.0-0`），任意 0.x 版 DSH 启动自动过检，升级 DSH 不需要
+   任何额外操作。
 
 > 目前仅支持 macOS（悬浮模式依赖 DSH 自带的 Electron 运行时）。数据目录在 `~/.dsh/pet-whale/`，卸载不丢宠物。
 

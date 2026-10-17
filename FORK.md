@@ -37,18 +37,48 @@ dsh-pet-whale v1.0.0                  （本仓库，自己的名字 / 路由 / 
 - 纯 CSS/动画组合，不需要新图集行；开启 `prefers-reduced-motion` 时爱心不显示、
   挤压动画被系统级规则关掉。
 
-## 版本豁免（重要）
+## 版本豁免（历史 → 已根治）
+
+> **2026-10-17 起本插件已永久解决此问题**，见下文「根治」。以下为历史背景与排障记录。
+
+### 历史：豁免键对不上号
 
 DSH 的版本兼容校验用**插件 manifest 的 `name@version`** 做豁免键（不是 profile
 里的依赖别名！）。曾因豁免文件里记的是旧别名 `zkb-codex-pet@1.2.1`，而校验算出的
 键是 `dsh-bluewhale-pet@1.2.1`，对不上号导致插件被启动校验**静默跳过**——现象是
-市场里显示「已安装」但路由 404、无报错、重启多少次都没用。
-
-修复 / 新装时按本插件真实名字授豁免：
+市场里显示「已安装」但路由 404、无报错、重启多少次都没用。当年按真实名字授豁免：
 
 ```bash
 dsh plugin --profile desktop allow-version dsh-pet-whale@1.0.0 --dsh-version 0.2.0-rc.2 --accept-risk
 ```
+
+> 现版本 DSH 已无 `allow-version` 子命令；豁免记录落在
+> `~/.dsh/profiles/desktop/compatibility.json`（`name@version → DSH 版本数组`），
+> 应用内 plugin_manager 是正规入口。
+
+### 结构性根因：fork 遗留的死 peer 声明
+
+即使豁免键对了，本插件在**每一个** DSH 版本上都被判需豁免——因为从上游
+`dsh-codex-pet` 继承的 `peerDependencies` 里锁着一条
+`@deepseek-ai/dsh-host-webserver: 0.1.x 预发布版本区间`，而插件代码从未 import
+过它。DSH 启动校验的规则（见 `unmetRequirements`）：manifest 没声明
+`engines.dsh` 时，逐个检查 `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` 的 peer
+区间是否被**当前运行时版本**满足——0.2.x 必然不满足 0.1.x 区间，于是每次 DSH
+升级都要重新授一次豁免。
+
+### 根治：声明 `engines.dsh`
+
+DSH 官方规范：manifest 一旦声明 `engines.dsh`，**该区间单独决定**，peer 依赖
+直接不参与校验。本插件现声明：
+
+```json
+"engines": { "node": ">=22.19.0", "dsh": ">=0.1.0 <1.0.0-0" }
+```
+
+- 整个 0.x DSH 线（含全部 rc/alpha，prerelease 参与匹配）自动过检；
+- 顺手删掉那条从未被 import 的死 peer 依赖；
+- 到 DSH 1.0.0（含其 rc）时闸门会重新要求评估——这是有意的安全栏，
+  届时把区间上界放宽即可，不要直接删掉声明。
 
 ## 安装（link: 本地依赖）
 
