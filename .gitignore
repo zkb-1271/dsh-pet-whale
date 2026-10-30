@@ -27,3 +27,6 @@ preview.html
 preview-zh.html
 preview-en.html
 preview-features.html
+
+# 本地交接文档与历史会话记忆（不是 fork 内容，勿提交）
+.internal/

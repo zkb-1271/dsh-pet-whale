@@ -84,7 +84,7 @@ DSH 官方规范：manifest 一旦声明 `engines.dsh`，**该区间单独决定
 
 ```json
 // ~/.dsh/profiles/desktop/package.json
-"dependencies": { "dsh-pet-whale": "link:~/dsh-plugins/dsh-pet-whale" },
+"dependencies": { "dsh-pet-whale": "link:~/projects/dsh-pet-whale" },
 "dsh": { "profile": { "bundles": [ ..., "dsh-pet-whale" ] } }
 ```
 

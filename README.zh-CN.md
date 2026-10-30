@@ -46,17 +46,17 @@
 
 1. 克隆本仓库到固定位置：
    ```bash
-   git clone https://github.com/15372010668-dot/dsh-pet-whale.git ~/dsh-plugins/dsh-pet-whale
+   git clone https://github.com/15372010668-dot/dsh-pet-whale.git ~/projects/dsh-pet-whale
    ```
    > HTTPS 连接不稳定时改用 SSH（默认 22 端口不通就走 443 备选）：
    > ```bash
-   > git clone git@github.com:15372010668-dot/dsh-pet-whale.git ~/dsh-plugins/dsh-pet-whale
-   > git clone ssh://git@ssh.github.com:443/15372010668-dot/dsh-pet-whale.git ~/dsh-plugins/dsh-pet-whale
+   > git clone git@github.com:15372010668-dot/dsh-pet-whale.git ~/projects/dsh-pet-whale
+   > git clone ssh://git@ssh.github.com:443/15372010668-dot/dsh-pet-whale.git ~/projects/dsh-pet-whale
    > ```
 2. 在 DSH profile 的 `package.json` 中引用：
    ```json
    {
-     "dependencies": { "dsh-pet-whale": "link:~/dsh-plugins/dsh-pet-whale" },
+     "dependencies": { "dsh-pet-whale": "link:~/projects/dsh-pet-whale" },
      "dsh": { "profile": { "bundles": ["...", "dsh-pet-whale"] } }
    }
    ```
@@ -84,7 +84,7 @@
 ```bash
 npm run check   # 语法检查（4 个入口文件）
 npm test        # 112 项自动化测试：宿主 HTTP / 漫游引擎 / 通知状态机 / 悬浮窗命中区域
-npm run sync    # 同步到本地 DSH 插件目录
+npm run sync    # 仅在加载目录另置时需要同步；工作区=加载目录时自动跳过，只跑测试
 ```
 
 `lib/*.js` 为直接维护的 esbuild 产物，架构与血统说明见 [FORK.md](FORK.md)。
