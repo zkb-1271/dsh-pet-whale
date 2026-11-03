@@ -6,11 +6,11 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/15372010668-dot/dsh-pet-whale.git"
+    "url": "git+https://github.com/zkb-1271/dsh-pet-whale.git"
   },
-  "homepage": "https://github.com/15372010668-dot/dsh-pet-whale#readme",
+  "homepage": "https://github.com/zkb-1271/dsh-pet-whale#readme",
   "bugs": {
-    "url": "https://github.com/15372010668-dot/dsh-pet-whale/issues"
+    "url": "https://github.com/zkb-1271/dsh-pet-whale/issues"
   },
   "main": "lib/index.js",
   "exports": {
